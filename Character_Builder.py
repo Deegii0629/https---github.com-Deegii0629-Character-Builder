@@ -1,149 +1,203 @@
-# pip install pymysql
 import pymysql #helps connect to mysql
-import pandas as pd # https://stackoverflow.com/questions/46777397/how-can-i-see-the-output-in-python-as-like-sql-table-format
+from tabulate import tabulate #https://stackoverflow.com/questions/9535954/printing-lists-as-tabular-data
 import Character_Builder
 import itertools
 
-def printTable(tableNum):
-        sql = "SELECT *" #the start of the sql query - for the print table function we always need slect all
-        collumnNames = ['id','name','hp','wp','ad','ap']
-        if(tableNum == 0):
-            sql = sql + " FROM `character` " # adds to our query
-            crsr.execute(sql) #executes the sql query
-            for row in crsr: #loops through each row that was gathered to print neatly into terminal
-                toPrint = ""
-                for item in row:
-                    toPrint += str(item) + " "
-                print(toPrint)
-                
-        elif(tableNum == 1):
-            sql = sql + " from class " # adds to our query
-            res = crsr.execute(sql) #executes the sql query
-            print(*collumnNames)
-            for row in crsr: #loops through each row that was gathered to print neatly into terminal
-                toPrint = ""
-                for item in row:
-                    toPrint += str(item) + " "
-                print(toPrint)
-        elif(tableNum == 2):  
-            sql = sql + " from item "
-            res = crsr.execute(sql)
-            print(*collumnNames + "capacity")
-            for row in crsr: #loops through each row that was gathered to print neatly into terminal
-                toPrint = ""
-                for item in row:
-                    toPrint += str(item) + " "
-                print(toPrint)
-        elif(tableNum == 3):
-            sql = sql + " from headwear "
-            res = crsr.execute(sql)
-            print(*collumnNames)
-            for row in crsr: #loops through each row that was gathered to print neatly into terminal
-                toPrint = ""
-                for item in row:
-                    toPrint += str(item) + " "
-                print(toPrint)
-        elif(tableNum == 4):
-            sql = sql + " from top "
-            res = crsr.execute(sql)
-            print(*collumnNames)
-            for row in crsr: #loops through each row that was gathered to print neatly into terminal
-                toPrint = ""
-                for item in row:
-                    toPrint += str(item) + " "
-                print(toPrint)
-        elif(tableNum == 5):
-            sql = sql + " from bottom "
-            crsr.execute(sql)
-            print(*collumnNames)
-            for row in crsr: #loops through each row that was gathered to print neatly into terminal
-                toPrint = ""
-                for item in row:
-                    toPrint += str(item) + " "
-                print(toPrint)
-            else: print("invalid entree into printTable()")
-
-def updateRTs(tableNum, id, AP, AD, WP, HP, Wcap):
-    sql = "SELECT *"
-    if(tableNum == 1):
-        sql = sql + "FROM class "
-        sql = sql + "WHERE id = "+ str(id)
-        crsr = db.cursor()
-        crsr.execute(sql)
-        print('got here, 73')
-        crsrList = crsr.fetchall()
-        print(crsrList)
-        print(crsrList[0][5])
-        print('got here, 75')
-
-        #updates tallies
-        # AP += int(crsrList[0][5]) #row5
-        # AD += int(crsrList[0][4]) #row4
-        # HP += int(crsrList[0][2]) #row2
-        # Wcap += int(crsrList[0][3]) #row3        
+#Determines name of attribute for SQL queries
+#Accepts int tableNum from 1 to 5
+#Returns string corresponding name of attribute in Character_Builder SQL database
+def setTable(tableNum):
+    tableNum = int(tableNum)
+    while(tableNum not in [0,1,2,3,4,5]):
+        print("Invalid selection. Try again: ")
+        tableNum = int(input())
+    if(tableNum == 0):
+        table = "character"
+    elif(tableNum == 1):
+        table = "class"
     elif(tableNum == 2):
-        print('')
+        table = "item"
     elif(tableNum == 3):
-        print('')
+        table = "headwear"
     elif(tableNum == 4):
-        print('')
+        table = "top"
     elif(tableNum == 5):
-        print('')
-    else:
-        print("invalid tableNum in updateRTs()")
+        table = "bottom"
+    return table
 
-def view_or_change(tableNum):
+#Print out a table
+#Accepts int, from 1 to 5
+#Returns void
+def printTable(tableNum):
+    sql = "SELECT *" #the start of the sql query - for the print table function we always need slect all
+    if(tableNum == 0):
+        collumnNames = ['id','name','ap','ad','hp','wp','capacity','class_id','item_id','head_id','top_id','bottom_id']
+    else:
+        collumnNames = ['id','name','hp','wp','ad','ap']
+        collumnNames1 = ['id','name','hp','capacity','ad','ap']
+    table_ = setTable(tableNum)
+    sql = sql + " FROM `" + setTable(tableNum) + "` " # adds to our query
+    crsr.execute(sql) #executes the sql query
+    toPrint = str(collumnNames)
+    ##The below is the old method of printing (please leave it for reference and progress)
+    # for row in crsr: #loops through each row that was gathered to print neatly into terminal
+    #         toPrint = ""
+    #         for item in row:
+    #             toPrint += str(item) + " "
+    #         print(toPrint)
+    crsrData = crsr.fetchall()
+    if(tableNum == 1):
+        print(tabulate(crsrData,headers=collumnNames1,tablefmt='psql'))
+    else:
+        print(tabulate(crsrData,headers=collumnNames,tablefmt='psql'))
+    return table_
+
+#Update the running totals for user's created character
+#Accepts int tableNum from 1 to 5; int id
+#Returns NULL
+def updateRTs(tableNum, statsArray):
+    table = setTable(tableNum)
+    sql = "SELECT* "
+    sql = sql + "FROM " + str(table)
+    crsr = db.cursor()
+    crsr.execute(sql)
+    crsrList = crsr.fetchall()
+    #updates tallies
+    statsArray[0] += int(crsrList[0][5]) #row5 AP
+    statsArray[1] += int(crsrList[0][4]) #row4 AD
+    statsArray[2] += int(crsrList[0][2]) #row2 HP
+    if (tableNum == 1):
+        statsArray[4] += int(crsrList[0][3]) #row3 WCap  
+    elif(tableNum < 6 and tableNum > 1):
+        statsArray[3] += int(crsrList[0][3]) #row3 WP
+
+def insertAttribute(tableNum):
     printTable(tableNum)
-    print("Would you like to change anything here? (y/n): ")
-    valid = False
-    while (valid == False):
+    print("Type the number of your choice and press enter: ")
+    useri = input()
+    #updateRTs(counter, statsArray) #runs a function that is yet to be written
+    print("") #spacing line
+
+def createCharacter(character_name):
+    sql = "INSERT INTO `character` (ID, Name)"
+    sql = sql + "VALUES (" + str(getNewID()) + ", '" + character_name + "')"
+    crsr.execute(sql)
+
+def getTableSize(tableNum_):
+    table_to_update = setTable(tableNum_)
+    sql = "SELECT Count(ID) FROM `" + table_to_update + "`"
+    crsr = db.cursor()
+    crsr.execute(sql) #executing the sql
+    return crsr.fetchall()[0][0]
+
+def updateCharacterStats(statsArray_):
+    characterStats = ["AP","AD","HP","WP","Capacity"]
+    counter = 0
+    for stat in characterStats:
+        stat = str(stat)
+        print(stat)
+        statsArray_[counter] = str(statsArray_[counter])
+        print(statsArray_[counter])
+        sql = "UPDATE `" + "character" + "` SET " + stat + " = '" + str(statsArray[counter]) + "' WHERE ID = '" + str(getTableSize(0)) + "'"
+        crsr.execute(sql)
+        counter = counter + 1
+
+#input is a list of strings of attributes of character and the number of the attribute to be changed
+def updateAttributeFromCharacter(AttributeNum_, characterAttributes_):
+    AttributeNum_ = int(AttributeNum_)
+    table_to_update = setTable(0) #Determine Table FROM which to update
+    printTable(AttributeNum_)
+    print("Enter number of desired item: ")
+    useri = input()
+    while(int(useri) < 1 or int(useri) > getTableSize(AttributeNum_)):
+        print("Invalid input. Try again: ")
         useri = input()
-        if (useri != 'y' or useri !='n'):
-            print("Invalid Input. Use 'y' or 'n': ")
-        else: valid = True
+    item_to_update = characterAttributes_[AttributeNum_ + 7 - 1]
+    sql = "UPDATE `" + table_to_update + "` SET `" + item_to_update + "` = " + useri + " WHERE ID = " + str(getTableSize(0))
+    # sql = "FROM `" + table_to_update + "` "
+    print(AttributeNum_)
+    crsr.execute(sql)
+
+#function to find a new valid id number for the character table
+def getNewID():
+    sql = "SELECT Count(ID) FROM `character`" 
+    crsr = db.cursor()
+    crsr.execute(sql) #executing the sql
+    return crsr.fetchall()[0][0] + 1
+
+#function used to insert a tuple into the character table
+# def insertChar(User_Character_Name, statsArray):
+#     sql = "INSERT INTO `character` (ID, Name, HP, WP, AD, AP, Capacity)"
+#     sql = sql + "VALUES (" + str(getNewID()) + ", " + User_Character_Name + ", " #creates new tuple with values (ID NAME HP WP AD AP CAPACITY) being inserted all at once
+#     sql = sql + str(statsArray[2]) + ", " + str(statsArray[3]) + ", " + str(statsArray[1]) + ", " + str(statsArray[0]) + ", " + str(statsArray[4]) + ")" 
+#     crsr = db.cursor()
+#     crsr.execute(sql) #executing the sql
+    
+#View a table, or make a change to an attribute of user's Character
+#Accepts int tableNum from 1 to 5; int id
+#Returns NULL
+def view_and_change():
+    done = False
+    validInputs = ['n','N',1,2,3,4,5]
+    tableOptions = ["Class","Item","Headwear","Top","Bottom"]
+    #h = ['Number','Attribute']
+    while(done == False):
+        print("Currently, configuration is: \n")
+        print("p.s. Stat attributes are hidden because the object of the game is to figure out what combos yield the best stats!")
+        printTable(0)
+        #print(tabulate(crsrData,headers=collumnNames,tablefmt='psql'))
+        valid = False
+        #useri = -1 #####    potentially delete this
+        print("1: Class\n2: Item\n3: Headwear\n4: Top\n5: Bottom\n")
+        while (valid == False):
+            useri = input()
+            if (useri not in validInputs == True and int(useri) not in validInputs):
+                print("Invalid Input. Use 'n' , 'N' , or the number of the attribute to change: ")
+            else: valid = True
+        print("Would you like to change anything from these categories?: ")
+        print("If so, choose it's number. Otherwise, press 'n' or 'N'")
+        #crsrData = crsr.fetchall() tabulate(crsrData, headers= tableOptions, tablefmt='psql')
+        if(useri not in ['n','N']):
+            updateAttributeFromCharacter(useri , ["ID","Name","AP","AD","HP","WP","Capacity","Class_id","Item_id","Head_id","Top_id","Bottom_id"])
+        else:
+            done = True
         
+
+#Main Function  
 if __name__ == "__main__":
     
+    #Connect to Database
     conn_str = (r'DRIVER={MySQL ODBC 8.0 ANSI Driver};Server=localhost;Database=character_builder;UID=root;PWD=Ariunsuld12!') #connects to data base
     db = pymysql.connect(host='localhost', user='root', password='Ariunsuld12!', database='character_builder')
     crsr = db.cursor()
 
+    print(getTableSize(1))
+
+    #Instruct User
     print("Welcome to Character Builder! ")
     print("Type the name of your character and press enter: ")
     User_Character_Name = input()
-   
-    # sql = "where id = useri"
-    # print("You chose" + str(sql))
+    createCharacter(User_Character_Name)
+    print("")
 
-    #Remember to cite source
+    characterAttributes = ["ID","Name","AP","AD","HP","WP","Capacity","Class_id","Item_id","Head_id","Top_id","Bottom_id"]
     
-    #running total variables, all integers that simply are place holders for final stats
-    rtAP = 0 #running total for ability power
-    rtAD = 0 #attack damage
-    rtWP = 0 #weight points
-    rtHP = 0 #Health points
-    rtWCap = 0  #Weight capacity
-    
-    #update loop section
+    #array for running total variables, represent final stats
+    statsArray = [0,0,0,0,0] #represents [AP, AD, HP, WP, WCap]
+
+    #User initializes Character attributes
     counter = 1 
-    while(counter < 2):
-        printTable(counter)
-        print("Type the number of your choice and press enter: ")
-        useri = input()
-        updateRTs(counter, useri, rtAP, rtAD, rtWP, rtHP, rtWCap) #runs a function that is yet to be written
-        counter += 1
-    #end loop
+    while(counter < 6):
+        updateAttributeFromCharacter(counter,characterAttributes)
+        updateRTs(counter, statsArray)
+        counter = counter + 1
+    view_and_change()
 
-    #test block
-    print(rtAP," ",rtAD)
-    #printTable(2) #prints tables 1,2,3,4,5,5
-
-    
-    # suto code! Have user choose a name for their character (at some pont doesnt have to be the start)
-    #            Present user with each table one at a time
-    #            At any point, the user can request to print something, or a variety of things to keep up with what they've done
-    #            Have a way for the user to select the tuple they want to add to their character
-    #            Once selected we will keep a running tally of their characters stats, so we have to update these after each user selection
-    #              - the loop essentially: prints the next table -> takes user input -> updates our running counters
-    #            Once gone through every table print and insert their character into our character table
-    #            Ask user if they want to change/add anything
+    #calculates percent the character is optimal
+    sumStats = statsArray[0] + statsArray[1] + statsArray[2]
+    efficiencyPercent = (sumStats/420) * 100
+    updateCharacterStats(statsArray)
+    #prints finished character info to the screen prompts the option to save
+    print("Final stats of ", User_Character_Name, " [AP, AD, HP, WP, WCap]:\n",statsArray)
+    print("your character is ", efficiencyPercent, " percent optimal")
+    printTable(0)
