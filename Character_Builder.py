@@ -1,7 +1,11 @@
+#Final Project 12/15/2022
+#Character Builder
+#Teammates: Delgersaikhan Bayarsaikhan, Ethan Wagner, Travis Plunkett
+#Description: Our program takes user inputs to build a character
+#The goal of our game is to build the strongest character possible
+#At the end of the program, it will show how close you got to perfection
 import pymysql #helps connect to mysql
-from tabulate import tabulate #https://stackoverflow.com/questions/9535954/printing-lists-as-tabular-data
-import Character_Builder
-import itertools
+from tabulate import tabulate # found it on https://stackoverflow.com/questions/9535954/printing-lists-as-tabular-data
 
 #Determines name of attribute for SQL queries
 #Accepts int tableNum from 1 to 5
@@ -25,8 +29,8 @@ def setTable(tableNum):
         table = "bottom"
     return table
 
-#Print out a table
-#Accepts int, from 1 to 5
+#Print out a fancy table
+#Accepts int, from 1 to 5, corresponding to the ive tables to be printed
 #Returns void
 def printTable(tableNum):
     sql = "SELECT *" #the start of the sql query - for the print table function we always need slect all
@@ -39,21 +43,15 @@ def printTable(tableNum):
     sql = sql + " FROM `" + setTable(tableNum) + "` " # adds to our query
     crsr.execute(sql) #executes the sql query
     toPrint = str(collumnNames)
-    ##The below is the old method of printing (please leave it for reference and progress)
-    # for row in crsr: #loops through each row that was gathered to print neatly into terminal
-    #         toPrint = ""
-    #         for item in row:
-    #             toPrint += str(item) + " "
-    #         print(toPrint)
     crsrData = crsr.fetchall()
     if(tableNum == 1):
-        print(tabulate(crsrData,headers=collumnNames1,tablefmt='psql'))
+        print(tabulate(crsrData,headers = collumnNames1,tablefmt = 'psql'))
     else:
-        print(tabulate(crsrData,headers=collumnNames,tablefmt='psql'))
+        print(tabulate(crsrData,headers = collumnNames,tablefmt = 'psql'))
     return table_
 
 #Update the running totals for user's created character
-#Accepts int tableNum from 1 to 5; int id
+#Inputs a int tableNum from 1 to 5 and the stats array that will be updated by reference
 #Returns NULL
 def updateRTs(tableNum, statsArray):
     table = setTable(tableNum)
@@ -71,18 +69,14 @@ def updateRTs(tableNum, statsArray):
     elif(tableNum < 6 and tableNum > 1):
         statsArray[3] += int(crsrList[0][3]) #row3 WP
 
-def insertAttribute(tableNum):
-    printTable(tableNum)
-    print("Type the number of your choice and press enter: ")
-    useri = input()
-    #updateRTs(counter, statsArray) #runs a function that is yet to be written
-    print("") #spacing line
-
+#Creates a new character
 def createCharacter(character_name):
     sql = "INSERT INTO `character` (ID, Name)"
     sql = sql + "VALUES (" + str(getNewID()) + ", '" + character_name + "')"
     crsr.execute(sql)
 
+#simply returns the size of the table that is passed in
+#takes in an int, from 0 to 5, corresponding to the tablle to measure
 def getTableSize(tableNum_):
     table_to_update = setTable(tableNum_)
     sql = "SELECT Count(ID) FROM `" + table_to_update + "`"
@@ -90,6 +84,7 @@ def getTableSize(tableNum_):
     crsr.execute(sql) #executing the sql
     return crsr.fetchall()[0][0]
 
+# Updates the characters stats in response to their input
 def updateCharacterStats(statsArray_):
     characterStats = ["AP","AD","HP","WP","Capacity"]
     counter = 0
@@ -114,7 +109,6 @@ def updateAttributeFromCharacter(AttributeNum_, characterAttributes_):
         useri = input()
     item_to_update = characterAttributes_[AttributeNum_ + 7 - 1]
     sql = "UPDATE `" + table_to_update + "` SET `" + item_to_update + "` = " + useri + " WHERE ID = " + str(getTableSize(0))
-    # sql = "FROM `" + table_to_update + "` "
     print(AttributeNum_)
     crsr.execute(sql)
 
@@ -125,13 +119,6 @@ def getNewID():
     crsr.execute(sql) #executing the sql
     return crsr.fetchall()[0][0] + 1
 
-#function used to insert a tuple into the character table
-# def insertChar(User_Character_Name, statsArray):
-#     sql = "INSERT INTO `character` (ID, Name, HP, WP, AD, AP, Capacity)"
-#     sql = sql + "VALUES (" + str(getNewID()) + ", " + User_Character_Name + ", " #creates new tuple with values (ID NAME HP WP AD AP CAPACITY) being inserted all at once
-#     sql = sql + str(statsArray[2]) + ", " + str(statsArray[3]) + ", " + str(statsArray[1]) + ", " + str(statsArray[0]) + ", " + str(statsArray[4]) + ")" 
-#     crsr = db.cursor()
-#     crsr.execute(sql) #executing the sql
     
 #View a table, or make a change to an attribute of user's Character
 #Accepts int tableNum from 1 to 5; int id
@@ -140,14 +127,11 @@ def view_and_change():
     done = False
     validInputs = ['n','N',1,2,3,4,5]
     tableOptions = ["Class","Item","Headwear","Top","Bottom"]
-    #h = ['Number','Attribute']
     while(done == False):
         print("Currently, configuration is: \n")
         print("p.s. Stat attributes are hidden because the object of the game is to figure out what combos yield the best stats!")
         printTable(0)
-        #print(tabulate(crsrData,headers=collumnNames,tablefmt='psql'))
         valid = False
-        #useri = -1 #####    potentially delete this
         print("1: Class\n2: Item\n3: Headwear\n4: Top\n5: Bottom\n")
         while (valid == False):
             useri = input()
@@ -156,22 +140,19 @@ def view_and_change():
             else: valid = True
         print("Would you like to change anything from these categories?: ")
         print("If so, choose it's number. Otherwise, press 'n' or 'N'")
-        #crsrData = crsr.fetchall() tabulate(crsrData, headers= tableOptions, tablefmt='psql')
         if(useri not in ['n','N']):
             updateAttributeFromCharacter(useri , ["ID","Name","AP","AD","HP","WP","Capacity","Class_id","Item_id","Head_id","Top_id","Bottom_id"])
         else:
             done = True
-        
-
-#Main Function  
+##################  
+# Main Function #
+##################
 if __name__ == "__main__":
     
     #Connect to Database
     conn_str = (r'DRIVER={MySQL ODBC 8.0 ANSI Driver};Server=localhost;Database=character_builder;UID=root;PWD=Ariunsuld12!') #connects to data base
     db = pymysql.connect(host='localhost', user='root', password='Ariunsuld12!', database='character_builder')
     crsr = db.cursor()
-
-    print(getTableSize(1))
 
     #Instruct User
     print("Welcome to Character Builder! ")
@@ -180,8 +161,8 @@ if __name__ == "__main__":
     createCharacter(User_Character_Name)
     print("")
 
+    #Jargon for our game
     characterAttributes = ["ID","Name","AP","AD","HP","WP","Capacity","Class_id","Item_id","Head_id","Top_id","Bottom_id"]
-    
     #array for running total variables, represent final stats
     statsArray = [0,0,0,0,0] #represents [AP, AD, HP, WP, WCap]
 
