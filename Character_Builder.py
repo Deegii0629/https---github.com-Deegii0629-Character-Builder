@@ -90,9 +90,7 @@ def updateCharacterStats(statsArray_):
     counter = 0
     for stat in characterStats:
         stat = str(stat)
-        print(stat)
         statsArray_[counter] = str(statsArray_[counter])
-        print(statsArray_[counter])
         sql = "UPDATE `" + "character" + "` SET " + stat + " = '" + str(statsArray[counter]) + "' WHERE ID = '" + str(getTableSize(0)) + "'"
         crsr.execute(sql)
         counter = counter + 1
@@ -118,8 +116,7 @@ def getNewID():
     crsr = db.cursor()
     crsr.execute(sql) #executing the sql
     return crsr.fetchall()[0][0] + 1
-
-    
+ 
 #View a table, or make a change to an attribute of user's Character
 #Accepts int tableNum from 1 to 5; int id
 #Returns NULL
@@ -134,12 +131,13 @@ def view_and_change():
         valid = False
         print("1: Class\n2: Item\n3: Headwear\n4: Top\n5: Bottom\n")
         while (valid == False):
+            print("Would you like to change anything from these categories?: ")
+            print("If so, choose it's number. Otherwise, press 'n' or 'N'")
             useri = input()
             if (useri not in validInputs == True and int(useri) not in validInputs):
                 print("Invalid Input. Use 'n' , 'N' , or the number of the attribute to change: ")
             else: valid = True
-        print("Would you like to change anything from these categories?: ")
-        print("If so, choose it's number. Otherwise, press 'n' or 'N'")
+
         if(useri not in ['n','N']):
             updateAttributeFromCharacter(useri , ["ID","Name","AP","AD","HP","WP","Capacity","Class_id","Item_id","Head_id","Top_id","Bottom_id"])
         else:
@@ -180,5 +178,5 @@ if __name__ == "__main__":
     updateCharacterStats(statsArray)
     #prints finished character info to the screen prompts the option to save
     print("Final stats of ", User_Character_Name, " [AP, AD, HP, WP, WCap]:\n",statsArray)
-    print("your character is ", efficiencyPercent, " percent optimal")
+    print("Your character is ", round(efficiencyPercent), " percent optimal")
     printTable(0)
